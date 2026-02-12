@@ -158,6 +158,28 @@ git clone -b zhenyu git@github.com:MoatLab/pact-runtime.git /mnt/sda4/pact-runti
 reboot
 ```
 
+## Step 13: Verify Kernel and Install Packages
+
+1. Verify the running kernel is the mmctl kernel:
+   ```bash
+   uname -r
+   ```
+2. Install `libnuma-dev`, `numactl`, and `sysstat`:
+   ```bash
+   apt-get update && apt-get install -y libnuma-dev numactl sysstat
+   ```
+
+## Step 14: Compile Colloid TPP Kernel Module
+
+1. Build the kernel module in `colloid/tpp`:
+   ```bash
+   cd /mnt/sda4/colloid/tpp && make
+   ```
+2. Verify the module was built:
+   ```bash
+   ls /mnt/sda4/colloid/tpp/*.ko
+   ```
+
 ---
 
 ## Notes
