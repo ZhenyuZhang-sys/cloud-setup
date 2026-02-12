@@ -25,11 +25,11 @@ This document instructs Claude to set up a new server environment step by step. 
    mkfs.ext4 /dev/sda4
    ```
 
-## Step 2: Mount /dev/sda4 at /mnt on Boot
+## Step 2: Mount /dev/sda4 at /mnt/sda4 on Boot
 
-1. Create a mount point if `/mnt` does not exist:
+1. Create a mount point if `/mnt/sda4` does not exist:
    ```bash
-   mkdir -p /mnt
+   mkdir -p /mnt/sda4
    ```
 2. Get the UUID of `/dev/sda4`:
    ```bash
@@ -37,27 +37,27 @@ This document instructs Claude to set up a new server environment step by step. 
    ```
 3. Add an entry to `/etc/fstab`:
    ```
-   UUID=<uuid-of-sda4>  /mnt  ext4  defaults  0  2
+   UUID=<uuid-of-sda4>  /mnt/sda4  ext4  defaults  0  2
    ```
 4. Test the mount:
    ```bash
    mount -a
-   df -h /mnt
+   df -h /mnt/sda4
    ```
 
 ## Step 3: Clone and Compile GAPBS Workload
 
-1. Clone the GAPBS repository into `/mnt`:
+1. Clone the GAPBS repository into `/mnt/sda4`:
    ```bash
-   git clone https://github.com/sbeamer/gapbs.git /mnt/gapbs
+   git clone https://github.com/sbeamer/gapbs.git /mnt/sda4/gapbs
    ```
 2. Read the README to understand build instructions:
    ```bash
-   cat /mnt/gapbs/README.md
+   cat /mnt/sda4/gapbs/README.md
    ```
 3. Compile with the `bench-graphs` target using 8 parallel jobs (this takes ~40 minutes):
    ```bash
-   cd /mnt/gapbs && make bench-graphs -j8
+   cd /mnt/sda4/gapbs && make bench-graphs -j8
    ```
 
 ## Step 4: Clone cxl_scripts to Home Directory
@@ -66,10 +66,10 @@ This document instructs Claude to set up a new server environment step by step. 
 git clone git@github.com:ZhenyuZhang-sys/cxl_scripts.git ~/cxl_scripts
 ```
 
-## Step 5: Clone memcg Kernel (zhenyu branch) into /mnt
+## Step 5: Clone memcg Kernel (zhenyu branch) into /mnt/sda4
 
 ```bash
-git clone -b zhenyu git@github.com:MoatLab/memcgLinux.git /mnt/memcgLinux
+git clone -b zhenyu git@github.com:MoatLab/memcgLinux.git /mnt/sda4/memcgLinux
 ```
 
 ## Step 6: Install Kernel Compilation Dependencies
@@ -85,7 +85,7 @@ apt-get update && apt-get install -y \
 
 1. Start with a minimal config based on currently loaded modules:
    ```bash
-   cd /mnt/memcgLinux && make localmodconfig
+   cd /mnt/sda4/memcgLinux && make localmodconfig
    ```
 2. Disable `LRU_GEN`:
    ```bash
@@ -95,16 +95,20 @@ apt-get update && apt-get install -y \
    ```bash
    scripts/config --enable CONFIG_MMCTL
    ```
-4. Verify the config:
+4. Enable `INTEL_UNCORE_FREQ_CONTROL`:
    ```bash
-   grep -E 'LRU_GEN|MMCTL' .config
+   scripts/config --enable CONFIG_INTEL_UNCORE_FREQ_CONTROL
+   ```
+5. Verify the config:
+   ```bash
+   grep -E 'LRU_GEN|MMCTL|INTEL_UNCORE_FREQ_CONTROL' .config
    ```
 
 ## Step 8: Compile and Install the Kernel
 
 1. Compile the kernel with 40 parallel jobs:
    ```bash
-   cd /mnt/memcgLinux && make -j40
+   cd /mnt/sda4/memcgLinux && make -j40
    ```
 2. Install kernel modules:
    ```bash
@@ -134,16 +138,16 @@ apt-get update && apt-get install -y \
    grub-editenv list
    ```
 
-## Step 10: Clone Colloid (skx branch) into /mnt
+## Step 10: Clone Colloid (skx branch) into /mnt/sda4
 
 ```bash
-git clone -b skx git@github.com:MoatLab/colloid.git /mnt/colloid
+git clone -b skx git@github.com:MoatLab/colloid.git /mnt/sda4/colloid
 ```
 
-## Step 11: Clone pact-runtime (zhenyu branch) into /mnt
+## Step 11: Clone pact-runtime (zhenyu branch) into /mnt/sda4
 
 ```bash
-git clone -b zhenyu git@github.com:MoatLab/pact-runtime.git /mnt/pact-runtime
+git clone -b zhenyu git@github.com:MoatLab/pact-runtime.git /mnt/sda4/pact-runtime
 ```
 
 ## Step 12: Reboot the Server
@@ -158,6 +162,6 @@ reboot
 
 ## Notes
 
-- Steps 3 (GAPBS compile) and 8 (kernel compile) are long-running. Run them in the background or use `tmux`/`screen` if needed.
+- Steps 3 (GAPBS compile) and 8 (kernel compile) are long-running. Run them in the background or use `tmux`/`screen` if needed. **Do NOT run both compilations at the same time** — the server can only handle one at a time. Complete Step 3 (GAPBS) before starting Step 8 (kernel), or vice versa.
 - Step 9 requires careful identification of the correct GRUB menu entry. Verify the kernel version string matches the one just compiled.
 - After reboot, verify the running kernel with `uname -r` to confirm the mmctl kernel is active.

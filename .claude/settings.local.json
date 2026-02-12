@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mount:*)",
+      "Bash(sudo lvdisplay:*)",
+      "Bash(lsblk:*)"
+    ]
+  }
+}
